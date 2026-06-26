@@ -43,13 +43,15 @@
   .daily-badge { display: inline-block; background: var(--gold); color: var(--ink); font-size: 0.55rem; font-weight: 600; border-radius: 8px; padding: 0.1rem 0.4rem; margin-left: 0.3rem; vertical-align: middle; letter-spacing: 0.06em; }
 
   /* FLASHCARD */
-  .card-scene { perspective: 1200px; width: min(480px, 100%); height: 286px; cursor: pointer; user-select: none; flex-shrink: 0; }
-  .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.55s cubic-bezier(0.45,0.05,0.55,0.95); transform-style: preserve-3d; }
-  .card-scene.flipped .card-inner { transform: rotateY(180deg); }
-  .card-face { position: absolute; inset: 0; background: var(--card-bg); border-radius: 4px; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.4rem; box-shadow: 0 2px 20px rgba(44,31,20,0.1), inset 0 0 0 1px var(--border); }
-  .card-back { transform: rotateY(180deg); }
+  .card-scene { width: min(480px, 100%); height: 286px; cursor: pointer; user-select: none; flex-shrink: 0; position: relative; }
+  .card-inner { position: relative; width: 100%; height: 100%; }
+  .card-face { position: absolute; inset: 0; background: var(--card-bg); border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.4rem; box-shadow: 0 2px 20px rgba(44,31,20,0.1), inset 0 0 0 1px var(--border); transition: opacity 0.2s ease, transform 0.2s ease; }
+  .card-front { opacity: 1; transform: scale(1); }
+  .card-back { opacity: 0; transform: scale(0.97); pointer-events: none; }
+  .card-scene.flipped .card-front { opacity: 0; transform: scale(0.97); pointer-events: none; }
+  .card-scene.flipped .card-back { opacity: 1; transform: scale(1); pointer-events: auto; }
   .card-label { position: absolute; top: 1rem; font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--mist); font-family: 'Inter', sans-serif; opacity: 0.7; }
-  .card-word { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.8rem, 6.5vw, 3rem); font-weight: 300; color: var(--ink); text-align: center; line-height: 1.15; }
+  .card-word { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.8rem, 6.5vw, 3rem); font-weight: 300; color: var(--parchment); text-align: center; line-height: 1.15; }
   .card-word.spanish { font-style: italic; color: var(--rust); }
   .card-pronunciation { margin-top: 0.5rem; font-size: 0.78rem; color: var(--mist); opacity: 0.65; font-family: 'Inter', sans-serif; letter-spacing: 0.04em; }
   .card-hint { position: absolute; bottom: 1rem; font-size: 0.61rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mist); opacity: 0.5; font-family: 'Inter', sans-serif; }
@@ -470,6 +472,7 @@ function flipCard() {
   isFlipped = !isFlipped;
   document.getElementById('cardScene').classList.toggle('flipped', isFlipped);
   if (isFlipped) document.getElementById('answerRow').style.display = 'flex';
+  else document.getElementById('answerRow').style.display = 'none';
 }
 
 function nextCard() {
