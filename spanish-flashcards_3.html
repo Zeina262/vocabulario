@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vocabulario — Spanish Flashcards</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #ffffff; --parchment: #2c1f14; --cream: #faf5ee;
+    --rust: #8b3a2a; --sienna: #c4622d; --gold: #966b1a;
+    --sage: #3d5436; --mist: #7a6a5e; --card-bg: #ffffff; --amber: #c49a2a;
+    --border: rgba(44,31,20,0.12); --subtle-bg: rgba(44,31,20,0.04);
+  }
+  html, body { height: 100%; background: #f7f2ec; color: var(--parchment); font-family: 'Inter', sans-serif; font-weight: 300; }
+  .app { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+
+  /* HEADER */
+  header { padding: 1.4rem 2.2rem 1.1rem; border-bottom: 1px solid var(--border); background: #ffffff; display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; }
+  .wordmark { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 300; font-size: 1.8rem; color: var(--gold); white-space: nowrap; }
+  .wordmark span { color: var(--mist); font-style: normal; font-size: 0.85rem; font-family: 'Inter', sans-serif; letter-spacing: 0.1em; text-transform: uppercase; margin-left: 0.4rem; }
+  .nav-tabs { display: flex; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+  .nav-tab { background: none; border: none; border-right: 1px solid var(--border); color: var(--mist); font-family: 'Inter', sans-serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.48rem 1rem; cursor: pointer; transition: all 0.2s; }
+  .nav-tab:last-child { border-right: none; }
+  .nav-tab:hover { background: var(--subtle-bg); color: var(--parchment); }
+  .nav-tab.active { background: var(--rust); color: #fff; }
+  .nav-tab .badge { display: inline-block; background: var(--amber); color: var(--ink); font-size: 0.58rem; font-weight: 500; border-radius: 10px; padding: 0 0.32rem; margin-left: 0.3rem; vertical-align: middle; line-height: 1.55; }
+  .streak-display { font-size: 0.78rem; color: var(--gold); display: flex; align-items: center; gap: 0.3rem; }
+  .streak-display span { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; }
+  .score-display { margin-left: auto; text-align: right; font-size: 0.72rem; color: var(--mist); line-height: 1.75; }
+  .score-display strong { color: var(--gold); font-weight: 500; font-size: 0.95rem; }
+
+  /* VIEWS */
+  .view { display: none; }
+  .view.active { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.8rem 1.5rem; gap: 1.6rem; min-height: 0; }
+
+  /* CATEGORY TABS */
+  .categories { display: flex; gap: 0.45rem; flex-wrap: wrap; justify-content: center; }
+  .cat-btn { background: none; border: 1px solid var(--border); color: var(--mist); font-family: 'Inter', sans-serif; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.35rem 0.8rem; border-radius: 2px; cursor: pointer; transition: all 0.2s; }
+  .cat-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .cat-btn.active { background: var(--rust); border-color: var(--rust); color: var(--parchment); }
+  .daily-badge { display: inline-block; background: var(--gold); color: var(--ink); font-size: 0.55rem; font-weight: 600; border-radius: 8px; padding: 0.1rem 0.4rem; margin-left: 0.3rem; vertical-align: middle; letter-spacing: 0.06em; }
+
+  /* FLASHCARD */
+  .card-scene { perspective: 1200px; width: min(480px, 100%); height: 286px; cursor: pointer; user-select: none; flex-shrink: 0; }
+  .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.55s cubic-bezier(0.45,0.05,0.55,0.95); transform-style: preserve-3d; }
+  .card-scene.flipped .card-inner { transform: rotateY(180deg); }
+  .card-face { position: absolute; inset: 0; background: var(--card-bg); border-radius: 4px; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2.4rem; box-shadow: 0 2px 20px rgba(44,31,20,0.1), inset 0 0 0 1px var(--border); }
+  .card-back { transform: rotateY(180deg); }
+  .card-label { position: absolute; top: 1rem; font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--mist); font-family: 'Inter', sans-serif; opacity: 0.7; }
+  .card-word { font-family: 'Cormorant Garamond', serif; font-size: clamp(1.8rem, 6.5vw, 3rem); font-weight: 300; color: var(--ink); text-align: center; line-height: 1.15; }
+  .card-word.spanish { font-style: italic; color: var(--rust); }
+  .card-pronunciation { margin-top: 0.5rem; font-size: 0.78rem; color: var(--mist); opacity: 0.65; font-family: 'Inter', sans-serif; letter-spacing: 0.04em; }
+  .card-hint { position: absolute; bottom: 1rem; font-size: 0.61rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mist); opacity: 0.5; font-family: 'Inter', sans-serif; }
+  .card-example { margin-top: 0.8rem; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--sage); text-align: center; line-height: 1.5; padding: 0 0.5rem; }
+  .card-face.is-learning::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--rust); border-radius: 4px 4px 0 0; }
+
+  /* BUTTONS */
+  .controls { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; justify-content: center; }
+  .btn { background: none; border: 1px solid var(--border); color: var(--parchment); font-family: 'Inter', sans-serif; font-size: 0.74rem; letter-spacing: 0.08em; padding: 0.58rem 1.25rem; border-radius: 2px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
+  .btn:hover { border-color: var(--mist); background: var(--subtle-bg); }
+  .btn.primary { background: var(--rust); border-color: var(--rust); }
+  .btn.primary:hover { background: var(--sienna); border-color: var(--sienna); }
+  .btn.success { background: var(--sage); border-color: var(--sage); color: var(--cream); }
+  .btn.success:hover { filter: brightness(1.15); }
+  .btn.danger { border-color: rgba(139,58,42,0.5); color: var(--rust); }
+  .btn.danger:hover { background: rgba(139,58,42,0.12); border-color: var(--rust); }
+  .btn:disabled { opacity: 0.28; cursor: not-allowed; }
+  .nav-row { display: flex; align-items: center; gap: 0.55rem; }
+  .card-counter { font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; color: var(--mist); min-width: 4.2rem; text-align: center; }
+
+  /* COMPLETE */
+  .complete-screen { display: none; flex-direction: column; align-items: center; gap: 1.3rem; text-align: center; padding: 1.5rem; }
+  .complete-screen.visible { display: flex; }
+  .complete-title { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; font-weight: 300; font-style: italic; color: var(--gold); }
+  .complete-stats { font-size: 0.86rem; color: var(--mist); line-height: 1.9; }
+  .complete-stats strong { color: var(--parchment); font-weight: 500; }
+
+  /* REVISION VIEW */
+  #revisionView { justify-content: flex-start; padding-top: 1.8rem; }
+  .panel-header { width: min(700px, 100%); display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  .panel-title { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.55rem; color: var(--gold); }
+  .panel-subtitle { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mist); margin-top: 0.2rem; }
+  .panel-list { width: min(700px, 100%); display: flex; flex-direction: column; gap: 0.45rem; }
+  .panel-empty { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.25rem; color: var(--mist); opacity: 0.6; text-align: center; padding: 3rem 1rem; }
+  .rev-item { background: #ffffff; border: 1px solid var(--border); border-radius: 3px; padding: 0.8rem 1rem; display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.4rem 1rem; align-items: center; transition: border-color 0.2s; }
+  .rev-item:hover { border-color: var(--mist); }
+  .rev-es { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; color: var(--rust); }
+  .rev-en { font-size: 0.82rem; color: var(--parchment); }
+  .rev-meta { font-size: 0.63rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mist); opacity: 0.6; grid-column: 1 / -1; }
+  .rev-actions { display: flex; gap: 0.35rem; grid-row: 1; grid-column: 3; }
+  .rev-btn { background: none; border: 1px solid var(--border); color: var(--mist); font-size: 0.62rem; letter-spacing: 0.07em; text-transform: uppercase; padding: 0.28rem 0.55rem; border-radius: 2px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .rev-btn.promote { border-color: rgba(90,107,82,0.4); color: var(--sage); }
+  .rev-btn.promote:hover { background: rgba(90,107,82,0.15); }
+
+  /* KNOWN / GLOSSARY VIEW */
+  #knownView { justify-content: flex-start; padding-top: 1.8rem; }
+  .search-row { width: min(700px, 100%); display: flex; gap: 0.5rem; }
+  .search-input { flex: 1; background: #ffffff; border: 1px solid var(--border); color: var(--parchment); font-family: 'Inter', sans-serif; font-size: 0.84rem; padding: 0.5rem 0.8rem; border-radius: 2px; outline: none; transition: border-color 0.2s; }
+  .search-input:focus { border-color: var(--gold); }
+  .search-input::placeholder { color: var(--mist); opacity: 0.5; }
+  .known-group { width: min(700px, 100%); }
+  .known-group-label { font-size: 0.63rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mist); padding: 0.9rem 0 0.4rem; border-bottom: 1px solid var(--border); margin-bottom: 0.4rem; }
+  .known-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.4rem; }
+  .known-chip { background: #ffffff; border: 1px solid var(--border); border-radius: 3px; padding: 0.55rem 0.75rem; }
+  .known-chip-es { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1rem; color: var(--sage); }
+  .known-chip-en { font-size: 0.72rem; color: var(--mist); margin-top: 0.15rem; }
+  .known-stats-row { width: min(700px,100%); display: flex; gap: 1.5rem; padding-bottom: 0.3rem; flex-wrap: wrap; }
+  .known-stat { font-size: 0.72rem; color: var(--mist); }
+  .known-stat strong { color: var(--gold); font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; font-weight: 300; font-style: italic; margin-right: 0.2rem; }
+
+  /* AI PANEL */
+  .ai-panel { width: min(480px, 100%); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .ai-toggle { width: 100%; background: var(--subtle-bg); border: none; color: var(--mist); font-family: 'Inter', sans-serif; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.68rem 1.1rem; text-align: left; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: background 0.2s; }
+  .ai-toggle:hover { background: rgba(44,31,20,0.08); }
+  .ai-toggle .chevron { transition: transform 0.2s; font-size: 0.78rem; }
+  .ai-toggle.open .chevron { transform: rotate(180deg); }
+  .ai-body { display: none; padding: 0.9rem 1.1rem; background: var(--subtle-bg); gap: 0.6rem; flex-direction: column; }
+  .ai-body.open { display: flex; }
+  .ai-input-row { display: flex; gap: 0.5rem; }
+  .ai-input { flex: 1; background: #ffffff; border: 1px solid var(--border); color: var(--parchment); font-family: 'Inter', sans-serif; font-size: 0.83rem; padding: 0.48rem 0.72rem; border-radius: 2px; outline: none; transition: border-color 0.2s; }
+  .ai-input:focus { border-color: var(--gold); }
+  .ai-input::placeholder { color: var(--mist); opacity: 0.55; }
+  .ai-hint { font-size: 0.67rem; color: var(--mist); opacity: 0.48; line-height: 1.55; }
+  .ai-status { font-size: 0.74rem; color: var(--gold); min-height: 1.1em; font-style: italic; }
+
+  /* DAILY BANNER */
+  .daily-banner { width: min(480px,100%); background: rgba(150,107,26,0.07); border: 1px solid rgba(150,107,26,0.2); border-radius: 3px; padding: 0.7rem 1rem; display: flex; align-items: center; gap: 0.7rem; }
+  .daily-banner-icon { font-size: 1.1rem; flex-shrink: 0; }
+  .daily-banner-text { font-size: 0.76rem; color: var(--gold); line-height: 1.45; }
+  .daily-banner-text strong { font-weight: 500; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(2rem); background: rgba(44,31,20,0.92); border: 1px solid var(--border); color: var(--parchment); font-size: 0.78rem; padding: 0.65rem 1.3rem; border-radius: 3px; opacity: 0; transition: all 0.3s; pointer-events: none; backdrop-filter: blur(8px); white-space: nowrap; z-index: 999; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  footer { padding: 0.85rem 2.2rem; border-top: 1px solid var(--border); background: #ffffff; display: flex; justify-content: space-between; font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mist); opacity: 0.3; }
+
+  @keyframes shimmer { 0%,100%{opacity:.4} 50%{opacity:.9} }
+  .loading { animation: shimmer 1.1s ease-in-out infinite; }
+  @media(max-width:520px){ header{padding:1rem;gap:.7rem} .score-display{display:none} .known-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))} }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header>
+    <div class="wordmark">Vocabulario <span>Español</span></div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tabStudy" onclick="switchView('study')">Study</button>
+      <button class="nav-tab" id="tabRevision" onclick="switchView('revision')">Revision <span class="badge" id="revBadge" style="display:none">0</span></button>
+      <button class="nav-tab" id="tabKnown" onclick="switchView('known')">Glossary <span class="badge" id="knownBadge" style="display:none">0</span></button>
+    </div>
+    <div class="streak-display" id="streakDisplay" style="display:none">🔥 <span id="streakCount">0</span>-day streak</div>
+    <div class="score-display">
+      <div>Today <strong id="todayCount">0</strong> new</div>
+      <div>Total <strong id="totalKnown">0</strong> known</div>
+    </div>
+  </header>
+
+  <!-- ═══════════ STUDY VIEW ═══════════ -->
+  <main class="view active" id="studyView">
+    <div class="categories" id="categoryTabs"></div>
+
+    <!-- Daily banner (shown when daily deck is active) -->
+    <div class="daily-banner" id="dailyBanner" style="display:none">
+      <div class="daily-banner-icon">✦</div>
+      <div class="daily-banner-text"><strong>Today's cards</strong> — fresh vocabulary added just now. They'll update again tomorrow.</div>
+    </div>
+
+    <div class="card-scene" id="cardScene" onclick="flipCard()">
+      <div class="card-inner">
+        <div class="card-face card-front" id="cardFront">
+          <div class="card-label">Spanish</div>
+          <div class="card-word spanish" id="frontWord">—</div>
+          <div class="card-pronunciation" id="frontPronun"></div>
+          <div class="card-hint">tap to reveal</div>
+        </div>
+        <div class="card-face card-back">
+          <div class="card-label">English</div>
+          <div class="card-word" id="backWord">—</div>
+          <div class="card-example" id="backExample"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="nav-row">
+        <button class="btn" onclick="prevCard()">← Prev</button>
+        <div class="card-counter" id="cardCounter">1 / 1</div>
+        <button class="btn" onclick="nextCard()">Next →</button>
+      </div>
+    </div>
+
+    <div class="controls" id="answerRow" style="display:none">
+      <button class="btn danger" onclick="markCard(false)">Still learning</button>
+      <button class="btn success" onclick="markCard(true)">I knew it ✓</button>
+    </div>
+
+    <div class="complete-screen" id="completeScreen">
+      <div class="complete-title">¡Bien hecho!</div>
+      <div class="complete-stats" id="completeStats"></div>
+      <div class="controls">
+        <button class="btn primary" onclick="restartSession()">Start again</button>
+        <button class="btn" onclick="switchView('revision')">Go to Revision</button>
+        <button class="btn" onclick="switchView('known')">View Glossary</button>
+      </div>
+    </div>
+
+    <div class="ai-panel">
+      <button class="ai-toggle" id="aiToggleBtn" onclick="toggleAI()">
+        <span>✦ Generate cards with AI</span><span class="chevron">▾</span>
+      </button>
+      <div class="ai-body" id="aiBody">
+        <div class="ai-hint">Describe what you'd like to practise — e.g. "ordering food at a café", "travel phrases", "colours and emotions"</div>
+        <div class="ai-input-row">
+          <input class="ai-input" id="aiInput" placeholder="What would you like to learn?" onkeydown="if(event.key==='Enter') generateCards()" />
+          <button class="btn primary" onclick="generateCards()" id="genBtn">Generate</button>
+        </div>
+        <div class="ai-status" id="aiStatus"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══════════ REVISION VIEW ═══════════ -->
+  <main class="view" id="revisionView">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">Words to revise</div>
+        <div class="panel-subtitle" id="revSubtitle">Cards stay here until you mark them known</div>
+      </div>
+      <button class="btn primary" id="practiseRevBtn" onclick="practiseRevision()" style="display:none">Practise these →</button>
+    </div>
+    <div class="panel-list" id="revisionList"></div>
+  </main>
+
+  <!-- ═══════════ KNOWN / GLOSSARY VIEW ═══════════ -->
+  <main class="view" id="knownView">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">Your glossary</div>
+        <div class="panel-subtitle" id="knownSubtitle">Every word you've mastered</div>
+      </div>
+    </div>
+    <div class="known-stats-row" id="knownStatsRow"></div>
+    <div class="search-row">
+      <input class="search-input" id="glossarySearch" placeholder="Search Spanish or English…" oninput="renderGlossary()" />
+    </div>
+    <div id="glossaryContainer" style="width:min(700px,100%)"></div>
+  </main>
+
+</div><!-- .app -->
+
+<div class="toast" id="toast"></div>
+<footer><span>Vocabulario</span><span>Space / → flip · K known · L learning</span></footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+//  STORAGE KEYS
+// ══════════════════════════════════════════════════════════════════════
+const S_DECKS       = 'vocab_decks_v3';
+const S_STATUS      = 'vocab_status_v3';   // { key: 'known'|'learning' }
+const S_KNOWN_LIST  = 'vocab_known_list_v3'; // [ {es,en,pron,ex,deck,learnedAt}, … ]
+const S_DAILY_DATE  = 'vocab_daily_date_v3'; // "YYYY-MM-DD"
+const S_STREAK      = 'vocab_streak_v3';    // { lastDate, count }
+const S_TODAY_NEW   = 'vocab_today_new_v3'; // number of cards learned today
+
+// ══════════════════════════════════════════════════════════════════════
+//  DEFAULT DECKS
+// ══════════════════════════════════════════════════════════════════════
+const DEFAULT_DECKS = {
+  "Essentials": [
+    {es:"hola",en:"hello",pron:"OH-lah",ex:"¡Hola! ¿Cómo estás?"},
+    {es:"gracias",en:"thank you",pron:"GRAH-syahs",ex:"Muchas gracias por tu ayuda."},
+    {es:"por favor",en:"please",pron:"por fah-VOR",ex:"¿Me ayudas, por favor?"},
+    {es:"lo siento",en:"I'm sorry",pron:"loh SYEN-toh",ex:"Lo siento mucho."},
+    {es:"no entiendo",en:"I don't understand",pron:"noh en-TYEN-doh",ex:"Lo siento, no entiendo."},
+    {es:"habla más despacio",en:"speak more slowly",pron:"AH-blah mahs des-PAH-syoh",ex:"Por favor, habla más despacio."},
+    {es:"¿dónde está?",en:"where is it?",pron:"DON-deh es-TAH",ex:"¿Dónde está el baño?"},
+    {es:"necesito",en:"I need",pron:"neh-seh-SEE-toh",ex:"Necesito un taxi."},
+  ],
+  "Daily Life": [
+    {es:"el desayuno",en:"breakfast",pron:"el deh-sah-YOO-noh",ex:"El desayuno está listo."},
+    {es:"la tienda",en:"the shop / store",pron:"lah TYEN-dah",ex:"Voy a la tienda."},
+    {es:"el mercado",en:"the market",pron:"el mer-KAH-doh",ex:"El mercado abre a las ocho."},
+    {es:"mañana",en:"tomorrow / morning",pron:"mah-NYAH-nah",ex:"Nos vemos mañana."},
+    {es:"ahora mismo",en:"right now",pron:"ah-OH-rah MEES-moh",ex:"Ven ahora mismo."},
+    {es:"a veces",en:"sometimes",pron:"ah VAY-ses",ex:"A veces camino al trabajo."},
+    {es:"el trabajo",en:"work / job",pron:"el trah-BAH-hoh",ex:"Me gusta mi trabajo."},
+    {es:"la casa",en:"the house / home",pron:"lah KAH-sah",ex:"Estoy en casa."},
+  ],
+  "Feelings": [
+    {es:"estoy cansado/a",en:"I am tired",pron:"es-TOY kan-SAH-doh/dah",ex:"Estoy muy cansada hoy."},
+    {es:"me alegro",en:"I'm glad",pron:"meh ah-LEH-groh",ex:"Me alegro de verte."},
+    {es:"tengo hambre",en:"I'm hungry",pron:"TEN-goh AM-breh",ex:"Tengo mucha hambre."},
+    {es:"me encanta",en:"I love it",pron:"meh en-KAN-tah",ex:"Me encanta la música."},
+    {es:"qué pena",en:"what a shame",pron:"keh PEH-nah",ex:"¡Qué pena que no puedas venir!"},
+    {es:"no me importa",en:"I don't mind",pron:"noh meh im-POR-tah",ex:"No me importa esperar."},
+    {es:"estoy bien",en:"I'm fine / well",pron:"es-TOY BYEN",ex:"Estoy bien, ¿y tú?"},
+    {es:"qué lástima",en:"what a pity",pron:"keh LAHS-tee-mah",ex:"¡Qué lástima!"},
+  ]
+};
+
+// ══════════════════════════════════════════════════════════════════════
+//  LOAD / SAVE
+// ══════════════════════════════════════════════════════════════════════
+function ls(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }
+function ss(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+let decks      = ls(S_DECKS, JSON.parse(JSON.stringify(DEFAULT_DECKS)));
+let cardStatus = ls(S_STATUS, {});    // per-card known/learning (for active decks)
+let knownList  = ls(S_KNOWN_LIST, []); // graduated words
+let streak     = ls(S_STREAK, { lastDate: '', count: 0 });
+let todayNew   = ls(S_TODAY_NEW, 0);
+
+// ══════════════════════════════════════════════════════════════════════
+//  DATE HELPERS
+// ══════════════════════════════════════════════════════════════════════
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+function updateStreak() {
+  const today = todayStr();
+  if (streak.lastDate === today) return;
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  streak.count = (streak.lastDate === yesterday) ? streak.count + 1 : 1;
+  streak.lastDate = today;
+  if (todayStr() !== ls(S_DAILY_DATE, '')) todayNew = 0; // reset daily counter on new day
+  ss(S_STREAK, streak);
+  ss(S_TODAY_NEW, todayNew);
+  renderStreak();
+}
+
+function renderStreak() {
+  const el = document.getElementById('streakDisplay');
+  if (streak.count >= 2) { el.style.display = 'flex'; document.getElementById('streakCount').textContent = streak.count; }
+  else el.style.display = 'none';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  DAILY DECK
+// ══════════════════════════════════════════════════════════════════════
+async function maybeGenerateDailyDeck() {
+  const today = todayStr();
+  const lastDate = ls(S_DAILY_DATE, '');
+  if (lastDate === today) return; // already generated today
+
+  // Generate silently in background
+  const topics = [
+    "nature and the outdoors","food and cooking","emotions and relationships","travel and directions",
+    "shopping and money","body and health","time and daily routines","weather and seasons",
+    "hobbies and creativity","home and furniture","clothing and fashion","work and professions",
+    "technology and communication","animals","culture and celebrations"
+  ];
+  const topic = topics[Math.floor(Math.random() * topics.length)];
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6', max_tokens: 1000,
+        system: `You are a Spanish teacher. Return ONLY valid JSON, no markdown, no backticks:
+{"deckName":"2-3 word name","cards":[{"es":"Spanish","en":"English","pron":"phonetic","ex":"example sentence in Spanish"}]}
+Generate exactly 10 varied, practical, everyday cards on the given topic. Mix vocabulary and short phrases.`,
+        messages: [{ role: 'user', content: `Topic: ${topic}` }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '';
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    const name = `✦ Today — ${parsed.deckName}`;
+    decks[name] = parsed.cards;
+    ss(S_DECKS, decks);
+    ss(S_DAILY_DATE, today);
+    buildCategoryTabs();
+    showToast(`Today's deck ready: "${parsed.deckName}"`);
+  } catch(e) { /* silent fail — user still has all other decks */ }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════════════
+let currentDeck = Object.keys(decks)[0];
+let cards = [];
+let currentIdx = 0;
+let isFlipped = false;
+let currentView = 'study';
+
+function cardKey(deckName, card) { return `${deckName}::${card.es}`; }
+
+// ══════════════════════════════════════════════════════════════════════
+//  VIEWS
+// ══════════════════════════════════════════════════════════════════════
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(view + 'View').classList.add('active');
+  document.getElementById('tab' + view.charAt(0).toUpperCase() + view.slice(1)).classList.add('active');
+  if (view === 'revision') renderRevisionList();
+  if (view === 'known') renderGlossary();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════════════
+async function init() {
+  updateStreak();
+  buildCategoryTabs();
+  loadDeck(currentDeck);
+  updateHeaderCounts();
+  updateRevBadge();
+  updateKnownBadge();
+  await maybeGenerateDailyDeck();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  CATEGORY TABS
+// ══════════════════════════════════════════════════════════════════════
+function buildCategoryTabs() {
+  const container = document.getElementById('categoryTabs');
+  container.innerHTML = '';
+  Object.keys(decks).forEach(name => {
+    const isDaily = name.startsWith('✦ Today');
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn' + (name === currentDeck ? ' active' : '');
+    btn.innerHTML = (isDaily ? `<span style="color:var(--gold)">✦</span> ` : '') +
+      name.replace('✦ Today — ', '') +
+      (isDaily ? '<span class="daily-badge">Today</span>' : '');
+    btn.onclick = () => { currentDeck = name; loadDeck(name); buildCategoryTabs(); };
+    container.appendChild(btn);
+  });
+}
+
+function loadDeck(name) {
+  cards = decks[name] || [];
+  currentIdx = 0; isFlipped = false;
+  document.getElementById('completeScreen').classList.remove('visible');
+  document.getElementById('cardScene').style.display = '';
+  document.getElementById('answerRow').style.display = 'none';
+  document.getElementById('dailyBanner').style.display = name.startsWith('✦ Today') ? '' : 'none';
+  showCard();
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  CARD DISPLAY
+// ══════════════════════════════════════════════════════════════════════
+function showCard() {
+  if (!cards.length) return;
+  const c = cards[currentIdx];
+  const key = cardKey(currentDeck, c);
+  const status = cardStatus[key];
+  isFlipped = false;
+  document.getElementById('cardScene').classList.remove('flipped');
+  document.getElementById('frontWord').textContent = c.es;
+  document.getElementById('frontPronun').textContent = c.pron || '';
+  document.getElementById('backWord').textContent = c.en;
+  document.getElementById('backExample').textContent = c.ex || '';
+  document.getElementById('cardCounter').textContent = `${currentIdx + 1} / ${cards.length}`;
+  document.getElementById('answerRow').style.display = 'none';
+  const front = document.getElementById('cardFront');
+  front.classList.remove('is-learning');
+  if (status === 'learning') front.classList.add('is-learning');
+}
+
+function flipCard() {
+  if (!cards.length) return;
+  isFlipped = !isFlipped;
+  document.getElementById('cardScene').classList.toggle('flipped', isFlipped);
+  if (isFlipped) document.getElementById('answerRow').style.display = 'flex';
+}
+
+function nextCard() {
+  if (currentIdx < cards.length - 1) { currentIdx++; showCard(); }
+  else showComplete();
+}
+function prevCard() { if (currentIdx > 0) { currentIdx--; showCard(); } }
+
+// ══════════════════════════════════════════════════════════════════════
+//  MARK CARD
+// ══════════════════════════════════════════════════════════════════════
+function markCard(knew) {
+  const card = cards[currentIdx];
+  const key  = cardKey(currentDeck, card);
+
+  if (knew) {
+    // Graduate to known list
+    delete cardStatus[key];
+    ss(S_STATUS, cardStatus);
+    graduateToKnown(card, currentDeck);
+    updateStreak();
+  } else {
+    cardStatus[key] = 'learning';
+    ss(S_STATUS, cardStatus);
+  }
+  updateRevBadge();
+  updateKnownBadge();
+  updateHeaderCounts();
+  setTimeout(nextCard, 280);
+}
+
+function graduateToKnown(card, deckName) {
+  // Don't duplicate
+  const already = knownList.some(k => k.es === card.es);
+  if (already) { showToast(`Already in your glossary: "${card.es}"`); return; }
+  knownList.push({ es: card.es, en: card.en, pron: card.pron || '', ex: card.ex || '', deck: deckName.replace('✦ Today — ',''), learnedAt: todayStr() });
+  ss(S_KNOWN_LIST, knownList);
+  todayNew++;
+  ss(S_TODAY_NEW, todayNew);
+  showToast(`"${card.es}" added to your glossary ✓`);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  COMPLETE SCREEN
+// ══════════════════════════════════════════════════════════════════════
+function showComplete() {
+  document.getElementById('cardScene').style.display = 'none';
+  document.getElementById('answerRow').style.display = 'none';
+  document.getElementById('completeScreen').classList.add('visible');
+  const learning = cards.filter(c => cardStatus[cardKey(currentDeck, c)] === 'learning').length;
+  const known = cards.filter(c => knownList.some(k => k.es === c.es)).length;
+  document.getElementById('completeStats').innerHTML =
+    `You finished <strong>${cards.length}</strong> cards.<br>
+     Added to glossary: <strong>${known}</strong> &nbsp;·&nbsp; Still learning: <strong>${learning}</strong>`;
+}
+
+function restartSession() {
+  document.getElementById('completeScreen').classList.remove('visible');
+  loadDeck(currentDeck);
+  document.getElementById('cardScene').style.display = '';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  BADGES + HEADER COUNTS
+// ══════════════════════════════════════════════════════════════════════
+function getLearningCards() {
+  const result = [];
+  Object.keys(decks).forEach(deckName => {
+    decks[deckName].forEach(card => {
+      if (cardStatus[cardKey(deckName, card)] === 'learning') result.push({ card, deckName });
+    });
+  });
+  return result;
+}
+
+function updateRevBadge() {
+  const count = getLearningCards().length;
+  const b = document.getElementById('revBadge');
+  b.textContent = count; b.style.display = count > 0 ? 'inline-block' : 'none';
+}
+
+function updateKnownBadge() {
+  const count = knownList.length;
+  const b = document.getElementById('knownBadge');
+  b.textContent = count; b.style.display = count > 0 ? 'inline-block' : 'none';
+}
+
+function updateHeaderCounts() {
+  document.getElementById('todayCount').textContent = todayNew;
+  document.getElementById('totalKnown').textContent = knownList.length;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  REVISION VIEW
+// ══════════════════════════════════════════════════════════════════════
+function renderRevisionList() {
+  const list = getLearningCards();
+  const container = document.getElementById('revisionList');
+  const sub = document.getElementById('revSubtitle');
+  const btn = document.getElementById('practiseRevBtn');
+  container.innerHTML = '';
+
+  if (!list.length) {
+    container.innerHTML = '<div class="panel-empty">Nothing here — mark cards as "still learning" while studying.</div>';
+    sub.textContent = 'Cards stay here until you mark them known';
+    btn.style.display = 'none';
+    return;
+  }
+  sub.textContent = `${list.length} word${list.length !== 1 ? 's' : ''} waiting — they stay until you know them`;
+  btn.style.display = '';
+
+  list.forEach(({ card, deckName }) => {
+    const key = cardKey(deckName, card);
+    const item = document.createElement('div');
+    item.className = 'rev-item';
+    item.innerHTML = `
+      <div class="rev-es">${card.es}</div>
+      <div class="rev-en">${card.en}</div>
+      <div class="rev-actions">
+        <button class="rev-btn promote">✓ I know it</button>
+      </div>
+      <div class="rev-meta">${deckName.replace('✦ Today — ','')}${card.pron ? ' · ' + card.pron : ''}</div>
+    `;
+    item.querySelector('.promote').onclick = () => {
+      delete cardStatus[key];
+      ss(S_STATUS, cardStatus);
+      graduateToKnown(card, deckName);
+      updateRevBadge();
+      updateKnownBadge();
+      updateHeaderCounts();
+      renderRevisionList();
+    };
+    container.appendChild(item);
+  });
+}
+
+function practiseRevision() {
+  const list = getLearningCards();
+  if (!list.length) return;
+  decks['⟳ Revision'] = list.map(({ card }) => card);
+  currentDeck = '⟳ Revision';
+  buildCategoryTabs();
+  loadDeck('⟳ Revision');
+  switchView('study');
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  GLOSSARY VIEW
+// ══════════════════════════════════════════════════════════════════════
+function renderGlossary() {
+  const query = (document.getElementById('glossarySearch').value || '').toLowerCase().trim();
+  const container = document.getElementById('glossaryContainer');
+  const statsRow = document.getElementById('knownStatsRow');
+  container.innerHTML = '';
+
+  if (!knownList.length) {
+    container.innerHTML = '<div class="panel-empty">Your glossary is empty — mark cards as "I knew it" to build it up.</div>';
+    statsRow.innerHTML = '';
+    return;
+  }
+
+  // Stats
+  const byDate = {};
+  knownList.forEach(w => { byDate[w.learnedAt] = (byDate[w.learnedAt] || 0) + 1; });
+  const daysActive = Object.keys(byDate).length;
+  statsRow.innerHTML = `
+    <div class="known-stat"><strong>${knownList.length}</strong> words total</div>
+    <div class="known-stat"><strong>${todayNew}</strong> learned today</div>
+    <div class="known-stat"><strong>${daysActive}</strong> day${daysActive !== 1 ? 's' : ''} of study</div>
+  `;
+
+  // Filter
+  const filtered = query ? knownList.filter(w => w.es.toLowerCase().includes(query) || w.en.toLowerCase().includes(query) || (w.deck||'').toLowerCase().includes(query)) : knownList;
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="panel-empty">No words match "${query}".</div>`;
+    return;
+  }
+
+  // Group by deck
+  const groups = {};
+  filtered.forEach(w => {
+    const g = w.deck || 'Other';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(w);
+  });
+
+  Object.keys(groups).sort().forEach(deck => {
+    const section = document.createElement('div');
+    section.className = 'known-group';
+    section.innerHTML = `<div class="known-group-label">${deck} <span style="opacity:.5">(${groups[deck].length})</span></div>`;
+    const grid = document.createElement('div');
+    grid.className = 'known-grid';
+    groups[deck].forEach(w => {
+      const chip = document.createElement('div');
+      chip.className = 'known-chip';
+      chip.innerHTML = `<div class="known-chip-es">${w.es}</div><div class="known-chip-en">${w.en}</div>`;
+      chip.title = w.ex || '';
+      grid.appendChild(chip);
+    });
+    section.appendChild(grid);
+    container.appendChild(section);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  AI GENERATION
+// ══════════════════════════════════════════════════════════════════════
+function toggleAI() {
+  document.getElementById('aiToggleBtn').classList.toggle('open');
+  document.getElementById('aiBody').classList.toggle('open');
+}
+
+async function generateCards() {
+  const input = document.getElementById('aiInput');
+  const status = document.getElementById('aiStatus');
+  const genBtn = document.getElementById('genBtn');
+  const prompt = input.value.trim();
+  if (!prompt) return;
+  genBtn.disabled = true;
+  status.textContent = 'Generating…'; status.classList.add('loading');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6', max_tokens: 1000,
+        system: `You are a Spanish teacher. Return ONLY valid JSON, no markdown, no backticks:
+{"deckName":"2-3 word name","cards":[{"es":"Spanish","en":"English","pron":"phonetic","ex":"example in Spanish"}]}
+Generate 8-12 practical, everyday cards. Mix single words and short phrases.`,
+        messages: [{ role: 'user', content: `Create Spanish flashcards for: ${prompt}` }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '';
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    const name = parsed.deckName || 'AI Deck';
+    decks[name] = parsed.cards;
+    ss(S_DECKS, decks);
+    currentDeck = name;
+    buildCategoryTabs();
+    loadDeck(name);
+    status.classList.remove('loading');
+    status.textContent = `✓ ${parsed.cards.length} cards added to "${name}"`;
+    input.value = '';
+    showToast(`New deck "${name}" ready`);
+  } catch(e) {
+    status.classList.remove('loading');
+    status.textContent = '✗ Something went wrong — please try again.';
+  } finally { genBtn.disabled = false; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  KEYBOARD
+// ══════════════════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if (currentView !== 'study') return;
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); isFlipped ? nextCard() : flipCard(); }
+  if (e.key === 'ArrowLeft') prevCard();
+  if ((e.key === 'k' || e.key === 'K') && isFlipped) markCard(true);
+  if ((e.key === 'l' || e.key === 'L') && isFlipped) markCard(false);
+});
+
+// ══════════════════════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
